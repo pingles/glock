@@ -1,0 +1,11 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "github.com/samuel/go-zookeeper/zk",
+			"revision": "218e9c81c0dd8b3b18172b2bbfad92cc7d6db55f",
+			"revisionTime": "2015-11-02T15:44:00-08:00"
+		}
+	]
+}
