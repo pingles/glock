@@ -16,9 +16,7 @@ var (
 	workingDirectory = kingpin.Flag("cwd", "change to directory when executing").String()
 )
 
-func main() {
-	kingpin.Parse()
-
+func taskFromArgs() *cronyTask {
 	commandAndArgs := *command
 	splits := strings.Split(commandAndArgs, " ")
 	command := splits[0]
@@ -27,7 +25,20 @@ func main() {
 		args = splits[1:]
 	}
 
-	app, err := newApp(strings.Split(*zookeeper, ","), *lockPath, *cronSchedule, command, args, *workingDirectory)
+	task := &cronyTask{
+		cronSchedule: *cronSchedule,
+		command:      command,
+		args:         args,
+		directory:    *workingDirectory,
+	}
+
+	return task
+}
+
+func main() {
+	kingpin.Parse()
+	task := taskFromArgs()
+	app, err := newApp(strings.Split(*zookeeper, ","), *lockPath, task)
 	if err != nil {
 		log.Fatal(err)
 	}
