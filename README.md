@@ -19,6 +19,10 @@ However, doing this on an unknown set of machines is a little more difficult if 
 
 Croney solves the problem generally: allowing a command to be executed on a regular cron schedule but self-coordinating with other machines to ensure only a single task is run. It provides single-execution cron on cattle.
 
+## Building
+
+`Croney` dependencies were managed using [Govendor](https://github.com/kardianos/govendor). You can specify `GO15VENDOREXPERIMENT=1` to pull dependencies from the `./vendor` directory.
+
 ## License
 
 BSD 3-clause. Please see `LICENSE`.
