@@ -2,29 +2,41 @@ package main
 
 import (
 	"github.com/samuel/go-zookeeper/zk"
+	"github.com/robfig/cron"
 	"log"
 	"sync"
 	"time"
 )
 
+const (
+	Passive = iota
+	Active = iota
+)
+
 type croney struct {
-	lockPath  string
-	stopCh    chan bool
-	zookeeper []string
+	cronSchedule string
+	command      string
+	lockPath     string
+	stopCh       chan bool
+	zookeeper    []string
 
 	zkConn *zk.Conn
 	zkCh   <-chan zk.Event
 
-	currentState zk.State
+	state int32
+
 	sync.Mutex
 }
 
-func newApp(zookeeper []string, lockPath string) (*croney, error) {
+func newApp(zookeeper []string, lockPath, schedule, command string) (*croney, error) {
 	stopper := make(chan bool)
 	return &croney{
-		lockPath:  lockPath,
-		zookeeper: zookeeper,
-		stopCh:    stopper,
+		cronSchedule: schedule,
+		command:      command,
+		lockPath:     lockPath,
+		zookeeper:    zookeeper,
+		stopCh:       stopper,
+		state:        Passive,
 	}, nil
 }
 
@@ -35,18 +47,41 @@ func acquireLock(conn *zk.Conn, lockPath string) error {
 	return lock.Lock()
 }
 
+func (c *croney) active() {
+	c.Lock()
+	defer c.Unlock()
+	c.state = Active
+}
+
+func (c *croney) isActive() bool {
+	return c.state == Active
+}
+
+func (c *croney) passive() {
+	c.Lock()
+	defer c.Unlock()
+	c.state = Passive
+}
+
 func (c *croney) connectedWithSession() {
 	log.Println("connected with session")
-	err := acquireLock(c.zkConn, c.lockPath)
-	if err == nil {
-		log.Println("lock acquired, current process is operational")
-	} else {
-		log.Println("error creating lock:", err.Error())
+	if !c.isActive() {
+		err := acquireLock(c.zkConn, c.lockPath)
+		if err != nil {
+			log.Println("error acquiring lock:", err.Error())
+		}
+
+		if err == nil {
+			log.Println("lock acquired, current process is operational")
+			c.active()
+		}
 	}
 }
 
 func (c *croney) handleZkEvent(event zk.Event) {
 	switch event.State {
+	case zk.StateDisconnected:
+		// disconnected
 	case zk.StateConnecting:
 		log.Println("attempting to connect...")
 	case zk.StateConnected:
@@ -56,10 +91,19 @@ func (c *croney) handleZkEvent(event zk.Event) {
 	}
 }
 
+func (c *croney) executeTask() {
+	if c.isActive() {
+		log.Println("executing task:", c.command)
+	} else {
+		log.Println("not active, won't run command", c.command)
+	}
+}
+
 func (c *croney) run() {
-	conn, ch, err := zk.Connect(c.zookeeper, 5*time.Second)
+	sessionTimeout := 5 * time.Second
+	conn, ch, err := zk.Connect(c.zookeeper, sessionTimeout)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	c.zkConn = conn
 	c.zkCh = ch
@@ -71,6 +115,13 @@ func (c *croney) run() {
 			c.handleZkEvent(m)
 		}
 	}()
+
+	cron := cron.New()
+	err = cron.AddFunc(c.cronSchedule, c.executeTask)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cron.Start()
 
 	<-c.stopCh
 }
