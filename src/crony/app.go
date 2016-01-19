@@ -20,6 +20,7 @@ type crony struct {
 	cronSchedule string
 	command      string
 	commandArgs  []string
+	directory    string
 	lockPath     string
 	stopCh       chan bool
 	zookeeper    []string
@@ -32,12 +33,13 @@ type crony struct {
 	sync.Mutex
 }
 
-func newApp(zookeeper []string, lockPath, schedule, command string, args []string) (*crony, error) {
+func newApp(zookeeper []string, lockPath, schedule, command string, args []string, directory string) (*crony, error) {
 	stopper := make(chan bool)
 	return &crony{
 		cronSchedule: schedule,
 		command:      command,
 		commandArgs:  args,
+		directory:    directory,
 		lockPath:     lockPath,
 		zookeeper:    zookeeper,
 		stopCh:       stopper,
@@ -96,10 +98,13 @@ func (c *crony) handleZkEvent(event zk.Event) {
 	}
 }
 
-func runCommand(path string, args []string) error {
-	cmd := exec.Command(path, args...)
+func runCommand(c *crony) error {
+	cmd := exec.Command(c.command, c.commandArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if c.directory != "" {
+		cmd.Dir = c.directory
+	}
 	err := cmd.Run()
 	if err != nil {
 		log.Println("error running command:", err.Error())
@@ -111,8 +116,8 @@ func runCommand(path string, args []string) error {
 
 func (c *crony) executeTask() {
 	if c.isActive() {
-		log.Println(fmt.Sprintf("executing command=%s, args=%s", c.command, c.commandArgs))
-		runCommand(c.command, c.commandArgs)
+		log.Println(fmt.Sprintf("executing command=%s, args=%s, dir=%s", c.command, c.commandArgs, c.directory))
+		runCommand(c)
 	} else {
 		log.Println("not active, won't run command", c.command)
 	}
