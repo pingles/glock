@@ -1,19 +1,23 @@
 package main
 
 import (
-	"flag"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 )
 
-var zookeeper = flag.String("zookeeper", "localhost:2181", "zookeeper connecting string")
-var lockPath = flag.String("lockPath", "/some/path", "zookeeper path for lock")
-var cronSchedule = flag.String("schedule", "* * * * * *", "cron expression for task schedule")
-var command = flag.String("command", "/usr/bin/env echo 'hello, world'", "task to execute")
+var (
+	zookeeper = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Default("localhost:2181").String()
+	lockPath = kingpin.Flag("lockPath", "zookeeper path for lock, should identify task").Required().String()
+	cronSchedule = kingpin.Flag("schedule", "cron expression for task schedule").Required().String()
+	command = kingpin.Flag("command", "command to execute").Required().String()
+)
 
 func main() {
+	kingpin.Parse()
+
 	commandAndArgs := *command
 	splits := strings.Split(commandAndArgs, " ")
 	command := splits[0]
