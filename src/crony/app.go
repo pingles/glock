@@ -17,12 +17,10 @@ const (
 )
 
 type crony struct {
-	cronSchedule string
-	command      string
-	commandArgs  []string
-	lockPath     string
-	stopCh       chan bool
-	zookeeper    []string
+	lockPath  string
+	task      *cronyTask
+	stopCh    chan bool
+	zookeeper []string
 
 	zkConn *zk.Conn
 	zkCh   <-chan zk.Event
@@ -32,16 +30,21 @@ type crony struct {
 	sync.Mutex
 }
 
-func newApp(zookeeper []string, lockPath, schedule, command string, args []string) (*crony, error) {
+type cronyTask struct {
+	cronSchedule string
+	command      string
+	args         []string
+	directory    string
+}
+
+func newApp(zookeeper []string, lockPath string, task *cronyTask) (*crony, error) {
 	stopper := make(chan bool)
 	return &crony{
-		cronSchedule: schedule,
-		command:      command,
-		commandArgs:  args,
-		lockPath:     lockPath,
-		zookeeper:    zookeeper,
-		stopCh:       stopper,
-		state:        Passive,
+		task:      task,
+		lockPath:  lockPath,
+		zookeeper: zookeeper,
+		stopCh:    stopper,
+		state:     Passive,
 	}, nil
 }
 
@@ -96,10 +99,13 @@ func (c *crony) handleZkEvent(event zk.Event) {
 	}
 }
 
-func runCommand(path string, args []string) error {
-	cmd := exec.Command(path, args...)
+func runCommand(task *cronyTask) error {
+	cmd := exec.Command(task.command, task.args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if task.directory != "" {
+		cmd.Dir = task.directory
+	}
 	err := cmd.Run()
 	if err != nil {
 		log.Println("error running command:", err.Error())
@@ -111,10 +117,10 @@ func runCommand(path string, args []string) error {
 
 func (c *crony) executeTask() {
 	if c.isActive() {
-		log.Println(fmt.Sprintf("executing command=%s, args=%s", c.command, c.commandArgs))
-		runCommand(c.command, c.commandArgs)
+		log.Println(fmt.Sprintf("executing command=%s, args=%s, dir=%s", c.task.command, c.task.args, c.task.directory))
+		runCommand(c.task)
 	} else {
-		log.Println("not active, won't run command", c.command)
+		log.Println("passive, ignoring command execution", c.task.command)
 	}
 }
 
@@ -136,7 +142,7 @@ func (c *crony) run() {
 	}()
 
 	cron := cron.New()
-	err = cron.AddFunc(c.cronSchedule, c.executeTask)
+	err = cron.AddFunc(c.task.cronSchedule, c.executeTask)
 	if err != nil {
 		log.Fatal(err)
 	}

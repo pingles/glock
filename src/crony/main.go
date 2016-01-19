@@ -9,15 +9,14 @@ import (
 )
 
 var (
-	zookeeper    = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Default("localhost:2181").String()
-	lockPath     = kingpin.Flag("lockPath", "zookeeper path for lock, should identify task").Required().String()
-	cronSchedule = kingpin.Flag("schedule", "cron expression for task schedule").Required().String()
-	command      = kingpin.Flag("command", "command to execute").Required().String()
+	zookeeper        = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Default("localhost:2181").String()
+	lockPath         = kingpin.Flag("lockPath", "zookeeper path for lock, should identify task").Required().String()
+	cronSchedule     = kingpin.Flag("schedule", "cron expression for task schedule").Required().String()
+	command          = kingpin.Flag("command", "command to execute").Required().String()
+	workingDirectory = kingpin.Flag("cwd", "change to directory when executing").String()
 )
 
-func main() {
-	kingpin.Parse()
-
+func taskFromArgs() *cronyTask {
 	commandAndArgs := *command
 	splits := strings.Split(commandAndArgs, " ")
 	command := splits[0]
@@ -26,7 +25,20 @@ func main() {
 		args = splits[1:]
 	}
 
-	app, err := newApp([]string{*zookeeper}, *lockPath, *cronSchedule, command, args)
+	task := &cronyTask{
+		cronSchedule: *cronSchedule,
+		command:      command,
+		args:         args,
+		directory:    *workingDirectory,
+	}
+
+	return task
+}
+
+func main() {
+	kingpin.Parse()
+	task := taskFromArgs()
+	app, err := newApp(strings.Split(*zookeeper, ","), *lockPath, task)
 	if err != nil {
 		log.Fatal(err)
 	}
