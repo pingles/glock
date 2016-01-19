@@ -1,6 +1,9 @@
 .PHONY: clean
 
+GOPATH:=${shell pwd}
+
 croney:
-	GO15VENDOREXPERIMENT=1 go build -o croney .
+	GO15VENDOREXPERIMENT=1 go install croney
 clean:
-	rm -f ./croney
+	rm -rf ./bin
+	rm -rf ./pkg
