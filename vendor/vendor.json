@@ -3,6 +3,11 @@
 	"ignore": "test",
 	"package": [
 		{
+			"path": "github.com/robfig/cron",
+			"revision": "67823cd24dece1b04cced3a0a0b3ca2bc84d875e",
+			"revisionTime": "2014-11-23T13:28:03-05:00"
+		},
+		{
 			"path": "github.com/samuel/go-zookeeper/zk",
 			"revision": "218e9c81c0dd8b3b18172b2bbfad92cc7d6db55f",
 			"revisionTime": "2015-11-02T15:44:00-08:00"
