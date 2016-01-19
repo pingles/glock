@@ -4,12 +4,10 @@ Cron with companions.
 ## Usage
 
 ```
-$ crony --lockPath=/some/path --schedule="* * * * *" --command="/usr/bin/env echo 'hello, world'"
+$ crony --zookeeper=localhost:2181 --lockPath=/some/path --schedule="* * * * *" --command="/usr/bin/env echo 'hello, world'"
 ```
 
 Crony uses ZooKeeper to acquire a distributed lock, ensuring only a single process will execute a task. The task is executed according to the specified cron expression.
-
-For example, to run `echo 'hello, world'` every second (on a single machine) you can run as follows:
 
 `lockPath` is used to uniquely identify the task: it should be set to the same value across all machines that would attempt to execute the same command; only a single machine (from those specifying the same lock path) will execute the command.
 
