@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/robfig/cron"
 	"log"
+	"os"
+	"os/exec"
 	"sync"
 	"time"
 )
@@ -16,6 +19,7 @@ const (
 type croney struct {
 	cronSchedule string
 	command      string
+	commandArgs  []string
 	lockPath     string
 	stopCh       chan bool
 	zookeeper    []string
@@ -28,11 +32,12 @@ type croney struct {
 	sync.Mutex
 }
 
-func newApp(zookeeper []string, lockPath, schedule, command string) (*croney, error) {
+func newApp(zookeeper []string, lockPath, schedule, command string, args []string) (*croney, error) {
 	stopper := make(chan bool)
 	return &croney{
 		cronSchedule: schedule,
 		command:      command,
+		commandArgs:  args,
 		lockPath:     lockPath,
 		zookeeper:    zookeeper,
 		stopCh:       stopper,
@@ -91,9 +96,23 @@ func (c *croney) handleZkEvent(event zk.Event) {
 	}
 }
 
+func runCommand(path string, args []string) error {
+	cmd := exec.Command(path, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Println("error running command:", err.Error())
+		return err
+	}
+
+	return nil
+}
+
 func (c *croney) executeTask() {
 	if c.isActive() {
-		log.Println("executing task:", c.command)
+		log.Println(fmt.Sprintf("executing task. command=%s, args=%s", c.command, c.commandArgs))
+		runCommand(c.command, c.commandArgs)
 	} else {
 		log.Println("not active, won't run command", c.command)
 	}
