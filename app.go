@@ -111,7 +111,7 @@ func runCommand(path string, args []string) error {
 
 func (c *croney) executeTask() {
 	if c.isActive() {
-		log.Println(fmt.Sprintf("executing task. command=%s, args=%s", c.command, c.commandArgs))
+		log.Println(fmt.Sprintf("executing command=%s, args=%s", c.command, c.commandArgs))
 		runCommand(c.command, c.commandArgs)
 	} else {
 		log.Println("not active, won't run command", c.command)
