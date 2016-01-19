@@ -8,9 +8,10 @@ import (
 )
 
 var zookeeper = flag.String("zookeeper", "localhost:2181", "zookeeper connecting string")
+var lockPath = flag.String("lockPath", "/some/path", "zookeeper path for lock")
 
 func main() {
-	app, err := newApp([]string{*zookeeper})
+	app, err := newApp([]string{*zookeeper}, *lockPath)
 	if err != nil {
 		log.Fatal(err)
 	}
