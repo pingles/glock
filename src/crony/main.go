@@ -26,7 +26,7 @@ func main() {
 		args = splits[1:]
 	}
 
-	app, err := newApp([]string{*zookeeper}, *lockPath, *cronSchedule, command, args)
+	app, err := newApp(strings.Split(*zookeeper, ","), *lockPath, *cronSchedule, command, args)
 	if err != nil {
 		log.Fatal(err)
 	}
