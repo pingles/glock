@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/samuel/go-zookeeper/zk"
 	"github.com/robfig/cron"
+	"github.com/samuel/go-zookeeper/zk"
 	"log"
 	"os"
 	"os/exec"
@@ -13,10 +13,10 @@ import (
 
 const (
 	Passive = iota
-	Active = iota
+	Active  = iota
 )
 
-type croney struct {
+type crony struct {
 	cronSchedule string
 	command      string
 	commandArgs  []string
@@ -32,9 +32,9 @@ type croney struct {
 	sync.Mutex
 }
 
-func newApp(zookeeper []string, lockPath, schedule, command string, args []string) (*croney, error) {
+func newApp(zookeeper []string, lockPath, schedule, command string, args []string) (*crony, error) {
 	stopper := make(chan bool)
-	return &croney{
+	return &crony{
 		cronSchedule: schedule,
 		command:      command,
 		commandArgs:  args,
@@ -52,23 +52,23 @@ func acquireLock(conn *zk.Conn, lockPath string) error {
 	return lock.Lock()
 }
 
-func (c *croney) active() {
+func (c *crony) active() {
 	c.Lock()
 	defer c.Unlock()
 	c.state = Active
 }
 
-func (c *croney) isActive() bool {
+func (c *crony) isActive() bool {
 	return c.state == Active
 }
 
-func (c *croney) passive() {
+func (c *crony) passive() {
 	c.Lock()
 	defer c.Unlock()
 	c.state = Passive
 }
 
-func (c *croney) connectedWithSession() {
+func (c *crony) connectedWithSession() {
 	log.Println("connected with session")
 	if !c.isActive() {
 		err := acquireLock(c.zkConn, c.lockPath)
@@ -83,7 +83,7 @@ func (c *croney) connectedWithSession() {
 	}
 }
 
-func (c *croney) handleZkEvent(event zk.Event) {
+func (c *crony) handleZkEvent(event zk.Event) {
 	switch event.State {
 	case zk.StateDisconnected:
 		// disconnected
@@ -109,7 +109,7 @@ func runCommand(path string, args []string) error {
 	return nil
 }
 
-func (c *croney) executeTask() {
+func (c *crony) executeTask() {
 	if c.isActive() {
 		log.Println(fmt.Sprintf("executing command=%s, args=%s", c.command, c.commandArgs))
 		runCommand(c.command, c.commandArgs)
@@ -118,7 +118,7 @@ func (c *croney) executeTask() {
 	}
 }
 
-func (c *croney) run() {
+func (c *crony) run() {
 	sessionTimeout := 5 * time.Second
 	conn, ch, err := zk.Connect(c.zookeeper, sessionTimeout)
 	if err != nil {
@@ -145,7 +145,7 @@ func (c *croney) run() {
 	<-c.stopCh
 }
 
-func (c *croney) stop() {
+func (c *crony) stop() {
 	log.Println("closing connection")
 	c.zkConn.Close()
 	c.stopCh <- true

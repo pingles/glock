@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	zookeeper = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Default("localhost:2181").String()
-	lockPath = kingpin.Flag("lockPath", "zookeeper path for lock, should identify task").Required().String()
+	zookeeper    = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Default("localhost:2181").String()
+	lockPath     = kingpin.Flag("lockPath", "zookeeper path for lock, should identify task").Required().String()
 	cronSchedule = kingpin.Flag("schedule", "cron expression for task schedule").Required().String()
-	command = kingpin.Flag("command", "command to execute").Required().String()
+	command      = kingpin.Flag("command", "command to execute").Required().String()
 )
 
 func main() {

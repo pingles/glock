@@ -2,8 +2,8 @@
 
 GOPATH:=${shell pwd}
 
-croney:
-	GO15VENDOREXPERIMENT=1 go install croney
+crony: ${wildcard src/crony/**/*.go}
+	GO15VENDOREXPERIMENT=1 go install crony
 clean:
 	rm -rf ./bin
 	rm -rf ./pkg
