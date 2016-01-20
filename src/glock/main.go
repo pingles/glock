@@ -19,6 +19,8 @@ var (
 	sessionTimeout = kingpin.Flag("sessionTimeout", "zookeeper session timeout.").Default("10s").Duration()
 )
 
+var version string
+
 func parseZooKeeper(zkarg string) []string {
 	return strings.Split(zkarg, ",")
 }
@@ -55,6 +57,7 @@ func execChannel(cmd *commandAndArgs) <-chan error {
 }
 
 func main() {
+	kingpin.Version(version)
 	kingpin.Parse()
 
 	lockCh := lockChannel(*zookeeper, *sessionTimeout, *path)
