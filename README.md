@@ -2,9 +2,9 @@
 Go-implemented Global Lock.
 
 ## Rationale
-[Flock](http://man7.org/linux/man-pages/man1/flock.1.html) implements a filesystem lock useful when running [Cron](http://man7.org/linux/man-pages/man8/cron.8.html) if there's a chance multiple instances of a job may be executing.
+[Flock](http://man7.org/linux/man-pages/man1/flock.1.html) provides a mutual exclusion lock built on the filesystem.
 
-Glock mimics this using ZooKeeper to provide a global lock.
+Glock also provides a mutual exclusion lock but, by using ZooKeeper, provides a global lock suitable for use across machines.
 
 ## Usage
 
