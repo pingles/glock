@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/exec"
-	"strings"
 )
 
 type commandAndArgs struct {
@@ -11,12 +10,8 @@ type commandAndArgs struct {
 	args []string
 }
 
-func parseCommand(cmd string) *commandAndArgs {
-	parts := strings.Split(cmd, " ")
-	if len(parts) == 1 {
-		return &commandAndArgs{cmd, []string{}}
-	}
-	return &commandAndArgs{parts[0], parts[1:]}
+func parseCommand(cmd []string) *commandAndArgs {
+	return &commandAndArgs{cmd[0], cmd[1:]}
 }
 
 func runCommand(c *commandAndArgs) error {

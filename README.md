@@ -9,7 +9,7 @@ Glock mimics this using ZooKeeper to provide a global lock.
 ## Usage
 
 ```
-$ glock --zookeeper=localhost:2181 --path=/glock/some/task --command="echo 'hello, world'"
+$ glock --zookeeper=localhost:2181 --path=/glock/some/task echo 'hello, world'
 ```
 
 The `glock` command will first attempt to acquire a lock from ZooKeeper within `wait` (default 5 seconds). The process that acquires the lock will immediately execute the command.
