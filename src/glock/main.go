@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
+	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -12,7 +14,7 @@ var (
 	zookeeper      = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Required().String()
 	path           = kingpin.Flag("path", "zookeeper path for lock").Required().String()
 	command        = kingpin.Flag("command", "command to execute").Required().String()
-	sleep          = kingpin.Flag("sleep", "duration to sleep after task executes to ensure single execution.").Default("15s").Duration()
+	minExec        = kingpin.Flag("minExec", "minimum execution time. should be set large enough to cover clock drift across instances.").Default("15s").Duration()
 	wait           = kingpin.Flag("wait", "duration to wait for lock before exiting.").Default("5s").Duration()
 	sessionTimeout = kingpin.Flag("sessionTimeout", "zookeeper session timeout.").Default("10s").Duration()
 )
@@ -43,6 +45,15 @@ func lockChannel(zookeeper string, sessionTimeout time.Duration, path string) <-
 	return lockCh
 }
 
+func execChannel(cmd *commandAndArgs) <-chan error {
+	c := make(chan error, 1)
+	go func() {
+		err := runCommand(cmd)
+		c <- err
+	}()
+	return c
+}
+
 func main() {
 	kingpin.Parse()
 
@@ -50,9 +61,20 @@ func main() {
 
 	select {
 	case lock := <-lockCh:
-		runCommand(parseCommand(*command))
-		time.Sleep(*sleep)
+		execCh := execChannel(parseCommand(*command))
+		<-time.After(*minExec)
+		execError := <-execCh
+
 		lock.Unlock()
+
+		if execError != nil {
+			fmt.Println("error executing command:", execError.Error())
+			exitError := execError.(*exec.ExitError)
+			if exitError != nil {
+				exitCode := exitError.Sys().(syscall.WaitStatus).ExitStatus()
+				os.Exit(exitCode)
+			}
+		}
 	case <-time.After(*wait):
 		fmt.Println("couldn't acquire lock in time, exiting.")
 		os.Exit(1)
