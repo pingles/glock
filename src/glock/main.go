@@ -13,7 +13,7 @@ import (
 var (
 	zookeeper      = kingpin.Flag("zookeeper", "zookeeper connection string. can be comma-separated.").Required().String()
 	path           = kingpin.Flag("path", "zookeeper path for lock").Required().String()
-	command        = kingpin.Flag("command", "command to execute").Required().String()
+	command        = kingpin.Arg("command", "command to execute").Required().String()
 	minExec        = kingpin.Flag("minExec", "minimum execution time. should be set large enough to cover clock drift across instances.").Default("15s").Duration()
 	wait           = kingpin.Flag("wait", "duration to wait for lock before exiting.").Default("5s").Duration()
 	sessionTimeout = kingpin.Flag("sessionTimeout", "zookeeper session timeout.").Default("10s").Duration()
