@@ -2,7 +2,7 @@
 
 GOPATH:=${shell pwd}
 
-./bin/glock: ${wildcard src/glock/**/*.go}
+./bin/glock: ${wildcard src/glock/*.go}
 	GO15VENDOREXPERIMENT=1 go install glock
 
 clean:
